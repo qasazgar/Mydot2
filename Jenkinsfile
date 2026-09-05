@@ -1,19 +1,21 @@
-
+```groovy
 pipeline {
 
     agent any
 
-    // Run automatically once every hour
+    // ==========================================
+    // Run once every hour
+    // ==========================================
     triggers {
         cron('H * * * *')
     }
 
+    // ==========================================
+    // Pipeline Options
+    // ==========================================
     options {
 
-        // Timestamper plugin
-        timestamps()
-
-        // Prevent two executions at the same time
+        // Do not allow two builds at the same time
         disableConcurrentBuilds()
 
         // Keep last 30 builds
@@ -31,59 +33,73 @@ pipeline {
         )
     }
 
+    // ==========================================
+    // Environment
+    // ==========================================
     environment {
 
         // Bruno environment
         BRUNO_ENV = 'Dev'
 
-        // Bruno collection directory
+        // Bruno collection folder
         BRUNO_COLLECTION = '01- End To End'
 
-        // Reports
-        REPORT_DIR   = 'results'
+        // Report directory
+        REPORT_DIR = 'results'
+
+        // Report files
         JUNIT_REPORT = 'results/bruno-junit.xml'
         HTML_REPORT  = 'results/bruno-report.html'
         JSON_REPORT  = 'results/bruno-report.json'
 
-        // Jenkins credentials
-        // Create these in:
-        // Manage Jenkins -> Credentials
+        // ======================================
+        // SMS configuration
+        // ======================================
+
+        SMS_API_URL = 'https://YOUR-SMS-PROVIDER/api/send'
 
         SMS_API_TOKEN_CREDENTIAL = 'sms-api-token'
         SMS_MOBILE_CREDENTIAL    = 'sms-mobile-number'
-
-        // Your SMS API
-        SMS_API_URL = 'https://YOUR-SMS-PROVIDER/api/send'
     }
 
 
+    // ==========================================
+    // STAGES
+    // ==========================================
+
     stages {
 
-        // ==================================================
+
+        // ======================================
         // 1. Checkout
-        // ==================================================
+        // ======================================
 
         stage('Checkout') {
+
             steps {
 
-                echo 'Checking out source code...'
+                echo '=========================================='
+                echo 'Checking out repository'
+                echo '=========================================='
 
                 checkout scm
             }
         }
 
 
-        // ==================================================
-        // 2. Check Node
-        // ==================================================
+        // ======================================
+        // 2. Check Node / NPM
+        // ======================================
 
         stage('Check Environment') {
+
             steps {
 
                 sh '''
                     echo "Node version:"
                     node --version
 
+                    echo ""
                     echo "NPM version:"
                     npm --version
                 '''
@@ -91,16 +107,20 @@ pipeline {
         }
 
 
-        // ==================================================
-        // 3. Install Bruno CLI
-        // ==================================================
+        // ======================================
+        // 3. Install Bruno
+        // ======================================
 
         stage('Install Bruno CLI') {
+
             steps {
 
                 sh '''
+                    echo "Installing Bruno CLI..."
+
                     npm install -g @usebruno/cli
 
+                    echo ""
                     echo "Bruno version:"
                     bru --version
                 '''
@@ -108,39 +128,38 @@ pipeline {
         }
 
 
-        // ==================================================
+        // ======================================
         // 4. Prepare Reports
-        // ==================================================
+        // ======================================
 
         stage('Prepare Reports') {
+
             steps {
 
                 sh '''
+                    echo "Preparing report directory..."
+
                     rm -rf results
                     mkdir -p results
+
+                    ls -la results
                 '''
             }
         }
 
 
-        // ==================================================
-        // 5. Run Bruno E2E Tests
-        // ==================================================
+        // ======================================
+        // 5. Run Bruno E2E
+        // ======================================
 
         stage('Run Bruno E2E Tests') {
 
             steps {
 
-                echo "=========================================="
-                echo "Starting Bruno E2E Tests"
+                echo '=========================================='
+                echo 'Starting Bruno E2E Tests'
                 echo "Environment: ${BRUNO_ENV}"
-                echo "=========================================="
-
-                /*
-                 * catchError allows the pipeline to continue
-                 * so reports can still be published even when
-                 * Bruno tests fail.
-                 */
+                echo '=========================================='
 
                 catchError(
                     buildResult: 'FAILURE',
@@ -149,6 +168,12 @@ pipeline {
 
                     sh """
                         cd "${BRUNO_COLLECTION}"
+
+                        echo "Current directory:"
+                        pwd
+
+                        echo ""
+                        echo "Running Bruno..."
 
                         bru run \
                             --env "${BRUNO_ENV}" \
@@ -161,13 +186,15 @@ pipeline {
         }
 
 
-        // ==================================================
+        // ======================================
         // 6. Publish JUnit
-        // ==================================================
+        // ======================================
 
         stage('Publish JUnit Report') {
 
             steps {
+
+                echo 'Publishing JUnit report...'
 
                 junit(
                     testResults: "${JUNIT_REPORT}",
@@ -178,13 +205,15 @@ pipeline {
         }
 
 
-        // ==================================================
+        // ======================================
         // 7. Archive Reports
-        // ==================================================
+        // ======================================
 
         stage('Archive Reports') {
 
             steps {
+
+                echo 'Archiving Bruno reports...'
 
                 archiveArtifacts(
                     artifacts: 'results/**/*',
@@ -196,56 +225,60 @@ pipeline {
     }
 
 
-    // ======================================================
-    // POST ACTIONS
-    // ======================================================
+    // ==========================================
+    // POST
+    // ==========================================
 
     post {
 
-        // --------------------------------------------------
+
+        // ======================================
         // SUCCESS
-        // --------------------------------------------------
+        // ======================================
 
         success {
 
-            echo '''
-            ==========================================
-            ✅ BRUNO E2E TESTS PASSED
-            ==========================================
-            '''
+            echo '=========================================='
+            echo '✅ BRUNO E2E TESTS PASSED'
+            echo '=========================================='
 
             echo "Environment: ${env.BRUNO_ENV}"
             echo "Build: #${env.BUILD_NUMBER}"
-
-            // No SMS when everything passes
         }
 
 
-        // --------------------------------------------------
+        // ======================================
         // FAILURE
-        // --------------------------------------------------
+        // ======================================
 
         failure {
 
-            echo '''
-            ==========================================
-            🚨 BRUNO E2E TESTS FAILED
-            ==========================================
-            '''
+            echo '=========================================='
+            echo '🚨 BRUNO E2E TESTS FAILED'
+            echo '=========================================='
 
             script {
 
-                def buildUrl = env.BUILD_URL ?: 'Jenkins URL unavailable'
+                def buildUrl =
+                    env.BUILD_URL ?: 'Jenkins URL unavailable'
 
                 def smsMessage =
-                    "🚨 E2E TEST FAILED | " +
+                    "E2E TEST FAILED | " +
                     "Environment: ${env.BRUNO_ENV} | " +
                     "Job: ${env.JOB_NAME} | " +
                     "Build: #${env.BUILD_NUMBER} | " +
                     "${buildUrl}"
 
-                echo "Sending SMS notification..."
+                echo 'SMS notification should be sent here.'
 
+                /*
+                 * SMS API
+                 *
+                 * Uncomment after configuring your
+                 * SMS provider.
+                 */
+
+                /*
                 withCredentials([
 
                     string(
@@ -274,26 +307,25 @@ pipeline {
                              }'
                     """
                 }
+                */
             }
         }
 
 
-        // --------------------------------------------------
+        // ======================================
         // ALWAYS
-        // --------------------------------------------------
+        // ======================================
 
         always {
 
-            echo '''
-            ==========================================
-            Bruno E2E Monitoring Finished
-            ==========================================
-            '''
+            echo '=========================================='
+            echo 'Bruno E2E Monitoring Finished'
+            echo '=========================================='
 
             echo "Job: ${env.JOB_NAME}"
-            echo "Build: #${env.BUILD_NUMBER}"
+            echo "Build: ${env.BUILD_NUMBER}"
             echo "Result: ${currentBuild.currentResult}"
         }
     }
 }
-
+```
