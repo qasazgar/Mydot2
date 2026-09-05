@@ -2,13 +2,14 @@ pipeline {
     agent any
 
     environment {
-        NAJVA_SENDER = '90008239'
+        NAJVA_SENDER = '1000090990'
         MOBILE_1     = '09127988405'
         MOBILE_2     = '09127988406'
     }
 
     options {
         disableConcurrentBuilds()
+
         buildDiscarder(logRotator(
             numToKeepStr: '20',
             artifactNumToKeepStr: '10'
@@ -83,53 +84,68 @@ pipeline {
 
         success {
             echo "======================================"
-            echo " Check login tests PASSED"
+            echo " CHECK LOGIN TESTS PASSED"
             echo " No SMS will be sent."
             echo "======================================"
         }
 
-       failure {
-    echo "======================================"
-    echo " Check login tests FAILED"
-    echo " Sending SMS notification..."
-    echo "======================================"
+        failure {
+            echo "======================================"
+            echo " CHECK LOGIN TESTS FAILED"
+            echo " Sending SMS notification..."
+            echo "======================================"
 
-    withCredentials([
-        string(
-            credentialsId: 'najva-sms-token',
-            variable: 'NAJVA_TOKEN'
-        )
-    ]) {
+            withCredentials([
+                string(
+                    credentialsId: 'najva-sms-token',
+                    variable: 'NAJVA_TOKEN'
+                )
+            ]) {
 
-        sh 
-            set +x
+                sh '''
+                    set +x
 
-            MESSAGE="ALERT: MyDot E2E Check Login FAILED. Jenkins Build #${BUILD_NUMBER}. Please check Jenkins."
+                    MESSAGE="ALERT: MyDot E2E Check Login FAILED. Jenkins Build #${BUILD_NUMBER}. Please check Jenkins."
 
-            curl --fail-with-body -sS \
-                -X POST \
-                "https://email.najva.com/v1/sms/transactional_sms/" \
-                -H "Accept: application/json" \
-                -H "najva-token: ${NAJVA_TOKEN}" \
-                -H "Content-Type: application/json" \
-                --data "{
-                    \\"sms_content\\": \\"${MESSAGE}\\",
-                    \\"sender\\": \\"${NAJVA_SENDER}\\",
-                    \\"mobile\\": \\"${MOBILE_1}\\"
-                }"
+                    echo "Sending SMS to ${MOBILE_1}..."
 
-            curl --fail-with-body -sS \
-                -X POST \
-                "https://email.najva.com/v1/sms/transactional_sms/" \  
-                -H "Accept: application/json" \
-                -H "najva-token: ${NAJVA_TOKEN}" \
-                -H "Content-Type: application/json" \
-                --data "{
-                    \\"sms_content\\": \\"${MESSAGE}\\",
-                    \\"sender\\": \\"${NAJVA_SENDER}\\",
-                    \\"mobile\\": \\"${MOBILE_2}\\"
-                }"
-    }
-}
+                    curl -sS \
+                        -X POST \
+                        "https://email.najva.com/v1/sms/transactional_sms/" \
+                        -H "Accept: application/json" \
+                        -H "najva-token: ${NAJVA_TOKEN}" \
+                        -H "Content-Type: application/json" \
+                        --data "{
+                            \\"sms_content\\": \\"${MESSAGE}\\",
+                            \\"sender\\": \\"${NAJVA_SENDER}\\",
+                            \\"mobile\\": \\"${MOBILE_1}\\"
+                        }"
+
+                    echo ""
+                    echo "SMS request sent to ${MOBILE_1}"
+
+                    echo "Sending SMS to ${MOBILE_2}..."
+
+                    curl -sS \
+                        -X POST \
+                        "https://email.najva.com/v1/sms/transactional_sms/" \
+                        -H "Accept: application/json" \
+                        -H "najva-token: ${NAJVA_TOKEN}" \
+                        -H "Content-Type: application/json" \
+                        --data "{
+                            \\"sms_content\\": \\"${MESSAGE}\\",
+                            \\"sender\\": \\"${NAJVA_SENDER}\\",
+                            \\"mobile\\": \\"${MOBILE_2}\\"
+                        }"
+
+                    echo ""
+                    echo "SMS request sent to ${MOBILE_2}"
+
+                    echo "======================================"
+                    echo " SMS notification process completed"
+                    echo "======================================"
+                '''
+            }
+        }
     }
 }
