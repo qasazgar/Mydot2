@@ -49,7 +49,7 @@ runtime:
           });
 
           test("Response time should be less than 2000 ms", function() {
-            expect(res.responseTime).to.be.lessThan(2000);
+            expect(res.responseTime).to.be.lessThan(20);
           });
         }
 
