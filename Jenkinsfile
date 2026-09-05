@@ -97,7 +97,7 @@ pipeline {
 
             withCredentials([
                 string(
-                    credentialsId: 'najva-sms-token',
+                    credentialsId: '1b704ab0-1c91-45ac-9727-60be462ba1b4',
                     variable: 'NAJVA_TOKEN'
                 )
             ]) {
