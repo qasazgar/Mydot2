@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -9,7 +10,6 @@ pipeline {
 
     options {
         disableConcurrentBuilds()
-
         buildDiscarder(logRotator(
             numToKeepStr: '20',
             artifactNumToKeepStr: '10'
@@ -105,41 +105,53 @@ pipeline {
                 sh '''
                     set +x
 
-                    MESSAGE="ALERT: MyDot E2E Check Login FAILED. Jenkins Build #${BUILD_NUMBER}. Please check Jenkins."
+                    cat > send-sms.js <<'EOF'
+var request = require('request');
 
-                    echo "Sending SMS to ${MOBILE_1}..."
+var token = process.env.NAJVA_TOKEN;
 
-                    curl -sS \
-                        -X POST \
-                        "https://email.najva.com/v1/sms/transactional_sms/" \
-                        -H "Accept: application/json" \
-                        -H "najva-token: ${NAJVA_TOKEN}" \
-                        -H "Content-Type: application/json" \
-                        --data "{
-                            \\"sms_content\\": \\"${MESSAGE}\\",
-                            \\"sender\\": \\"${NAJVA_SENDER}\\",
-                            \\"mobile\\": \\"${MOBILE_1}\\"
-                        }"
+var mobiles = [
+    process.env.MOBILE_1,
+    process.env.MOBILE_2
+];
 
-                    echo ""
-                    echo "SMS request sent to ${MOBILE_1}"
+mobiles.forEach(function (mobile) {
 
-                    echo "Sending SMS to ${MOBILE_2}..."
+    var options = {
+        method: 'POST',
+        url: 'https://email.najva.com/v1/sms/transactional_sms/',
+        headers: {
+            'Accept': 'application/json',
+            'najva-token': token,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            sms_content: 'ALERT: MyDot E2E Check Login FAILED. Jenkins Build #' + process.env.BUILD_NUMBER,
+            sender: process.env.NAJVA_SENDER,
+            mobile: mobile
+        })
+    };
 
-                    curl -sS \
-                        -X POST \
-                        "https://email.najva.com/v1/sms/transactional_sms/" \
-                        -H "Accept: application/json" \
-                        -H "najva-token: ${NAJVA_TOKEN}" \
-                        -H "Content-Type: application/json" \
-                        --data "{
-                            \\"sms_content\\": \\"${MESSAGE}\\",
-                            \\"sender\\": \\"${NAJVA_SENDER}\\",
-                            \\"mobile\\": \\"${MOBILE_2}\\"
-                        }"
+    request(options, function (error, response) {
 
-                    echo ""
-                    echo "SMS request sent to ${MOBILE_2}"
+        if (error) {
+            console.error('SMS Error for ' + mobile + ':', error);
+            process.exitCode = 1;
+            return;
+        }
+
+        console.log('SMS response for ' + mobile + ':');
+        console.log(response.body);
+    });
+
+});
+EOF
+
+                    echo "Sending SMS notification..."
+
+                    node send-sms.js
+
+                    rm -f send-sms.js
 
                     echo "======================================"
                     echo " SMS notification process completed"
