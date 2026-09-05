@@ -101,7 +101,7 @@ pipeline {
         )
     ]) {
 
-        sh '''
+        sh 
             set +x
 
             MESSAGE="ALERT: MyDot E2E Check Login FAILED. Jenkins Build #${BUILD_NUMBER}. Please check Jenkins."
@@ -129,7 +129,6 @@ pipeline {
                     \\"sender\\": \\"${NAJVA_SENDER}\\",
                     \\"mobile\\": \\"${MOBILE_2}\\"
                 }"
-        '''
     }
 }
     }
