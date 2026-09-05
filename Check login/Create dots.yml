@@ -1,11 +1,11 @@
 info:
-  name: Login
+  name: Create dots
   type: http
-  seq: 1
+  seq: 2
 
 http:
-  method: POST
-  url: "{{Url}}/mydot/api/v1/auth/login/"
+  method: post
+  url: "{{Url}}/mydot/api/v1/dots/"
   headers:
     - name: accept
       value: application/json, text/plain, */*
@@ -16,7 +16,7 @@ http:
     - name: content-type
       value: application/json
     - name: Cookie
-      value: csrftoken=1myTX0tPxIMZ41BbVHFKcL5NjpfhsjGM; sessionid=v0afup4cq8ctofux08e37nwklnel09fn; _clck=1dpuog2%5E2%5Eg94%5E0%5E2436
+      value: csrftoken=1myTX0tPxIMZ41BbVHFKcL5NjpfhsjGM; sessionid=v0afup4cq8ctofux08e37nwklnel09fn; _clck=1dpuog2%5E2%5Eg94%5E0%5E2436; __Secure-access_token=eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg4NjE1NjI2LCJpYXQiOjE3ODg2MDM3NDksImp0aSI6ImJjZTY4ZDA5YjI0NzQ0NTJhNDkzOTAwZmJjZWQxYTRjIiwidXNlcl9pZCI6IjhlZjQ4MzVmLTgxZjEtNDBhOC04MmI1LTFmMjNiZDIwNDA5MCJ9.oxWXPTy7Zl7f_t-EbOSOcNC5EVE7hGmEd3qYdmozpB9d5Fk7pY7ccviJuE55SxdaAY__FdcC-0o7CCxqvq0T0Q; is_logged_in=true
     - name: origin
       value: https://mydot.one
     - name: pragma
@@ -43,8 +43,13 @@ http:
     type: json
     data: |-
       {
-        "identifier": "sazgar",
-        "password": "Ahmad@123"
+        "dot_type": "dot",
+        "content": "test",
+        "reply_to": null,
+        "repost_of": null,
+        "quote_of": null,
+        "media_ids": [],
+        "reply_permission": "everyone"
       }
   auth: inherit
 
@@ -52,24 +57,14 @@ runtime:
   scripts:
     - type: after-response
       code: |-
-        const setCookie = res.getHeader("set-cookie");
+        const dotId = res.body.id;
 
-        const cookieString = Array.isArray(setCookie)
-          ? setCookie.join("; ")
-          : setCookie;
-
-        const match = cookieString.match(
-          /__Secure-access_token=([^;]+)/
-        );
-
-        if (match) {
-          bru.setVar("access_token", match[1]);
-        }
+        bru.setVar("dot_id", dotId);
     - type: tests
       code: |-
         tests :{
-          test("Status code should be 200", function() {
-            expect(res.status).to.equal(200);
+          test("Status code should be 201", function() {
+            expect(res.status).to.equal(201);
           });
 
           test("Response time should be less than 2000 ms", function() {
@@ -78,7 +73,7 @@ runtime:
         }
 
 settings:
-  encodeUrl: true
+  encodeUrl: false
   timeout: 0
   followRedirects: true
   maxRedirects: 5

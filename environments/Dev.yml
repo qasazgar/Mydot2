@@ -3,3 +3,9 @@ variables:
   - name: Url
     value: https://api.mydot.one
     description: ""
+  - name: access_token
+    value: ""
+    description: ""
+  - name: dot_id
+    value: ""
+    description: ""
