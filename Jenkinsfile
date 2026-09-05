@@ -1,93 +1,41 @@
-
 pipeline {
-
     agent any
 
-    // ==========================================
-    // Run every hour
-    // ==========================================
-    triggers {
-        cron('H * * * *')
-    }
-
     options {
-
-        // Prevent two executions at the same time
         disableConcurrentBuilds()
-
-        // Keep last 30 builds
-        buildDiscarder(
-            logRotator(
-                numToKeepStr: '30',
-                artifactNumToKeepStr: '30'
-            )
-        )
-
-        // Maximum test execution time
-        timeout(
-            time: 30,
-            unit: 'MINUTES'
-        )
+        buildDiscarder(logRotator(
+            numToKeepStr: '20',
+            artifactNumToKeepStr: '10'
+        ))
     }
-
 
     stages {
 
-        // ==========================================
-        // 1. Checkout
-        // ==========================================
-
         stage('Checkout') {
             steps {
-
                 checkout scm
-
             }
         }
 
-
-        // ==========================================
-        // 2. Check Environment
-        // ==========================================
-
         stage('Check Environment') {
             steps {
-
                 sh '''
-                    echo "=========================================="
-                    echo "Environment Check"
-                    echo "=========================================="
+                    echo "===== Environment Check ====="
 
                     echo "Node version:"
                     node --version
 
-                    echo ""
                     echo "NPM version:"
                     npm --version
 
-                    echo ""
                     echo "Bruno version:"
                     bru --version
-
-                    echo ""
-                    echo "Current directory:"
-                    pwd
-
-                    echo ""
-                    echo "Repository files:"
-                    ls -la
                 '''
             }
         }
 
-
-        // ==========================================
-        // 3. Prepare Reports
-        // ==========================================
-
         stage('Prepare Reports') {
             steps {
-
                 sh '''
                     rm -rf reports
                     mkdir -p reports
@@ -95,21 +43,13 @@ pipeline {
             }
         }
 
-
-        // ==========================================
-        // 4. Run Check Login
-        // ==========================================
-
-        stage('Run Check Login') {
-
+        stage('Run Check Login Tests') {
             steps {
-
-                echo "=========================================="
-                echo "Running Check Login"
-                echo "Environment: Dev"
-                echo "=========================================="
-
                 sh '''
+                    echo "======================================"
+                    echo " Running Check login E2E Tests"
+                    echo "======================================"
+
                     bru run "Check login" \
                         --env Dev \
                         --reporter-junit reports/check-login-junit.xml \
@@ -119,22 +59,10 @@ pipeline {
         }
     }
 
-
-    // ==========================================
-    // POST ACTIONS
-    // ==========================================
-
     post {
 
-        // ==========================================
-        // Always
-        // ==========================================
-
         always {
-
-            echo "=========================================="
-            echo "Publishing Test Reports"
-            echo "=========================================="
+            echo "===== Publishing Test Results ====="
 
             junit(
                 allowEmptyResults: true,
@@ -143,47 +71,23 @@ pipeline {
 
             archiveArtifacts(
                 artifacts: 'reports/*.html',
-                allowEmptyArchive: true,
-                fingerprint: true
+                allowEmptyArchive: true
             )
         }
 
-
-        // ==========================================
-        // SUCCESS
-        // ==========================================
-
         success {
-
-            echo "=========================================="
-            echo "✅ CHECK LOGIN PASSED"
-            echo "=========================================="
-
-            echo "Environment: Dev"
-            echo "Build: #${env.BUILD_NUMBER}"
+            echo "======================================"
+            echo " Check login tests PASSED"
+            echo "======================================"
         }
 
-
-        // ==========================================
-        // FAILURE
-        // ==========================================
-
         failure {
+            echo "======================================"
+            echo " Check login tests FAILED"
+            echo " SMS notification should be sent here"
+            echo "======================================"
 
-            echo "=========================================="
-            echo "🚨 CHECK LOGIN FAILED"
-            echo "=========================================="
-
-            echo "Environment: Dev"
-            echo "Build: #${env.BUILD_NUMBER}"
-            echo "Job: ${env.JOB_NAME}"
-
-            /*
-             * SMS will be added here.
-             */
-
-            echo "SMS notification will be sent here."
+            // SMS notification will be added here
         }
     }
 }
-
