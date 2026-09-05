@@ -1,0 +1,5 @@
+name: Dev
+variables:
+  - name: Url
+    value: https://api.mydot.one
+    description: ""
