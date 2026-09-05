@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -10,6 +9,7 @@ pipeline {
 
     options {
         disableConcurrentBuilds()
+
         buildDiscarder(logRotator(
             numToKeepStr: '20',
             artifactNumToKeepStr: '10'
@@ -27,7 +27,9 @@ pipeline {
         stage('Check Environment') {
             steps {
                 sh '''
-                    echo "===== Environment Check ====="
+                    echo "======================================"
+                    echo " Environment Check"
+                    echo "======================================"
 
                     echo "Node version:"
                     node --version
@@ -54,7 +56,7 @@ pipeline {
             steps {
                 sh '''
                     echo "======================================"
-                    echo " Running Check login E2E Tests"
+                    echo " Running Check Login E2E Tests"
                     echo "======================================"
 
                     bru run "Check login" \
@@ -69,7 +71,9 @@ pipeline {
     post {
 
         always {
-            echo "===== Publishing Test Results ====="
+            echo "======================================"
+            echo " Publishing Test Results"
+            echo "======================================"
 
             junit(
                 allowEmptyResults: true,
@@ -106,48 +110,85 @@ pipeline {
                     set +x
 
                     cat > send-sms.js <<'EOF'
-var request = require('request');
 
-var token = process.env.NAJVA_TOKEN;
-
-var mobiles = [
+const mobiles = [
     process.env.MOBILE_1,
     process.env.MOBILE_2
 ];
 
-mobiles.forEach(function (mobile) {
+const token = process.env.NAJVA_TOKEN;
 
-    var options = {
-        method: 'POST',
-        url: 'https://email.najva.com/v1/sms/transactional_sms/',
-        headers: {
-            'Accept': 'application/json',
-            'najva-token': token,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            sms_content: 'ALERT: MyDot E2E Check Login FAILED. Jenkins Build #' + process.env.BUILD_NUMBER,
-            sender: process.env.NAJVA_SENDER,
-            mobile: mobile
-        })
-    };
+async function sendSMS(mobile) {
 
-    request(options, function (error, response) {
+    const response = await fetch(
+        'https://email.najva.com/v1/sms/transactional_sms/',
+        {
+            method: 'POST',
 
-        if (error) {
-            console.error('SMS Error for ' + mobile + ':', error);
-            process.exitCode = 1;
-            return;
+            headers: {
+                'Accept': 'application/json',
+                'najva-token': token,
+                'Content-Type': 'application/json'
+            },
+
+            body: JSON.stringify({
+                sms_content:
+                    'ALERT: MyDot E2E Check Login FAILED. Jenkins Build #' +
+                    process.env.BUILD_NUMBER,
+
+                sender: process.env.NAJVA_SENDER,
+                mobile: mobile
+            })
         }
+    );
 
-        console.log('SMS response for ' + mobile + ':');
-        console.log(response.body);
-    });
+    const result = await response.text();
 
+    console.log(
+        'SMS response for ' + mobile + ':'
+    );
+
+    console.log(result);
+
+    if (!response.ok) {
+        throw new Error(
+            'SMS request failed for ' +
+            mobile +
+            ' - HTTP ' +
+            response.status
+        );
+    }
+}
+
+async function main() {
+
+    for (const mobile of mobiles) {
+
+        console.log(
+            'Sending SMS to ' + mobile + '...'
+        );
+
+        await sendSMS(mobile);
+
+        console.log(
+            'SMS sent successfully to ' + mobile
+        );
+    }
+}
+
+main().catch(error => {
+
+    console.error(
+        'SMS ERROR:',
+        error
+    );
+
+    process.exit(1);
 });
+
 EOF
 
-                    echo "Sending SMS notification..."
+                    echo "Running SMS notification..."
 
                     node send-sms.js
 
