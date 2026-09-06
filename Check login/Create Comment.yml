@@ -1,11 +1,11 @@
 info:
-  name: Login
+  name: Create Comment
   type: http
-  seq: 1
+  seq: 3
 
 http:
   method: POST
-  url: "{{Url}}/auth/login/"
+  url: "{{Url}}/dots/"
   headers:
     - name: accept
       value: application/json, text/plain, */*
@@ -16,7 +16,7 @@ http:
     - name: content-type
       value: application/json
     - name: Cookie
-      value: csrftoken=1myTX0tPxIMZ41BbVHFKcL5NjpfhsjGM; sessionid=v0afup4cq8ctofux08e37nwklnel09fn; _clck=1dpuog2%5E2%5Eg94%5E0%5E2436
+      value: csrftoken=1myTX0tPxIMZ41BbVHFKcL5NjpfhsjGM; sessionid=v0afup4cq8ctofux08e37nwklnel09fn; _clck=1dpuog2%5E2%5Eg94%5E0%5E2436; __Secure-access_token=eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg4NzA2MjkxLCJpYXQiOjE3ODg2OTk0OTcsImp0aSI6ImY4ZTRhMzUzMWVkNTRhMGU5ZWIwZmJkNjU2YjVkOGI2IiwidXNlcl9pZCI6IjhlZjQ4MzVmLTgxZjEtNDBhOC04MmI1LTFmMjNiZDIwNDA5MCJ9.osc0g0XFPz0T0qymKyPk51grnX6t5GBgKXxqJBKTL137z_rOgd1FVSRVGW0luYGgKhCKUFiEZ2CbI1M2hIRBrQ; is_logged_in=true
     - name: origin
       value: https://mydot.one
     - name: pragma
@@ -43,33 +43,23 @@ http:
     type: json
     data: |-
       {
-        "identifier": "sazgar",
-        "password": "Ahmad@123"
+        "dot_type": "reply",
+        "content": "test4",
+        "reply_to": "{{dot_id}}",
+        "repost_of": null,
+        "quote_of": null,
+        "media_ids": [],
+        "reply_permission": "everyone"
       }
   auth: inherit
 
 runtime:
   scripts:
-    - type: after-response
-      code: |-
-        const setCookie = res.getHeader("set-cookie");
-
-        const cookieString = Array.isArray(setCookie)
-          ? setCookie.join("; ")
-          : setCookie;
-
-        const match = cookieString.match(
-          /__Secure-access_token=([^;]+)/
-        );
-
-        if (match) {
-          bru.setVar("access_token", match[1]);
-        }
     - type: tests
       code: |-
         tests :{
-          test("Status code should be 200", function() {
-            expect(res.status).to.equal(200);
+          test("Status code should be 201", function() {
+            expect(res.status).to.equal(201);
           });
 
           test("Response time should be less than 2000 ms", function() {
@@ -78,7 +68,7 @@ runtime:
         }
 
 settings:
-  encodeUrl: true
+  encodeUrl: false
   timeout: 0
   followRedirects: true
   maxRedirects: 5

@@ -1,11 +1,11 @@
 info:
   name: Delete Dots
   type: http
-  seq: 3
+  seq: 5
 
 http:
-  method: delete
-  url: https://api.mydot.one/mydot/api/v1/dots/{{dot_id}}/
+  method: DELETE
+  url: "{{Url}}/dots/{{dot_id}}/"
   headers:
     - name: accept
       value: application/json, text/plain, */*

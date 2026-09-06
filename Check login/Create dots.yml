@@ -5,7 +5,7 @@ info:
 
 http:
   method: post
-  url: "{{Url}}/mydot/api/v1/dots/"
+  url: "{{Url}}/dots/"
   headers:
     - name: accept
       value: application/json, text/plain, */*

@@ -1,11 +1,11 @@
 info:
-  name: Login
+  name: Get Comment
   type: http
-  seq: 1
+  seq: 4
 
 http:
-  method: POST
-  url: "{{Url}}/auth/login/"
+  method: GET
+  url: "{{Url}}/dots/{{dot_id}}/thread-view/"
   headers:
     - name: accept
       value: application/json, text/plain, */*
@@ -13,10 +13,8 @@ http:
       value: en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6
     - name: cache-control
       value: no-cache
-    - name: content-type
-      value: application/json
     - name: Cookie
-      value: csrftoken=1myTX0tPxIMZ41BbVHFKcL5NjpfhsjGM; sessionid=v0afup4cq8ctofux08e37nwklnel09fn; _clck=1dpuog2%5E2%5Eg94%5E0%5E2436
+      value: csrftoken=1myTX0tPxIMZ41BbVHFKcL5NjpfhsjGM; sessionid=v0afup4cq8ctofux08e37nwklnel09fn; _clck=1dpuog2%5E2%5Eg94%5E0%5E2436; __Secure-access_token=eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg4NzA4MTIwLCJpYXQiOjE3ODg2OTk0OTcsImp0aSI6Ijg4M2FhNjkzOTA2YzQxODM5ZDZiNmJhMDMyZDZkNWExIiwidXNlcl9pZCI6IjhlZjQ4MzVmLTgxZjEtNDBhOC04MmI1LTFmMjNiZDIwNDA5MCJ9.XVUvHKueUXRrZ8ikg7BBT8iPnopvK-3Z1i0tHPGdkGLycF8TQ1iRoUCPax1W83v8SyRwZ8Zt1HIMpgL8E6o-7Q; is_logged_in=true
     - name: origin
       value: https://mydot.one
     - name: pragma
@@ -39,34 +37,23 @@ http:
       value: same-site
     - name: user-agent
       value: Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1
-  body:
-    type: json
-    data: |-
-      {
-        "identifier": "sazgar",
-        "password": "Ahmad@123"
-      }
   auth: inherit
 
 runtime:
   scripts:
-    - type: after-response
-      code: |-
-        const setCookie = res.getHeader("set-cookie");
-
-        const cookieString = Array.isArray(setCookie)
-          ? setCookie.join("; ")
-          : setCookie;
-
-        const match = cookieString.match(
-          /__Secure-access_token=([^;]+)/
-        );
-
-        if (match) {
-          bru.setVar("access_token", match[1]);
-        }
     - type: tests
       code: |-
+        const response = res.getBody();
+
+        const targetContent = "test4";
+
+        const results = response?.below?.results || [];
+
+        const found = results.some(item => item.content === targetContent);
+
+        test(`Response should contain content "${targetContent}"`, function () {
+          expect(found).to.be.true;
+        });
         tests :{
           test("Status code should be 200", function() {
             expect(res.status).to.equal(200);
@@ -78,7 +65,7 @@ runtime:
         }
 
 settings:
-  encodeUrl: true
+  encodeUrl: false
   timeout: 0
   followRedirects: true
   maxRedirects: 5
