@@ -48,8 +48,8 @@ runtime:
             expect(res.status).to.equal(204);
           });
 
-          test("Response time should be less than 2000 ms", function() {
-            expect(res.responseTime).to.be.lessThan(20);
+          test("Response time should be less than 200 ms", function() {
+            expect(res.responseTime).to.be.lessThan(200);
           });
         }
 
