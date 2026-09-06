@@ -1,7 +1,7 @@
 name: Dev
 variables:
   - name: Url
-    value: https://api.mydot.one
+    value: https://api.mydot.one/mydot/api/v1
     description: ""
   - name: access_token
     value: ""
