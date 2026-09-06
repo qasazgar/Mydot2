@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        NAJVA_SENDER = '1000090990'
-        MOBILE_1 = '09127988405'
-        MOBILE_2 = '09127988406'
+        NAJVA_SENDER = 'YOUR_SENDER'
+        MOBILE_1     = '09127988405'
+        MOBILE_2     = '09127988406'
     }
 
     options {
@@ -27,9 +27,7 @@ pipeline {
         stage('Check Environment') {
             steps {
                 sh '''
-                    echo "======================================"
-                    echo " Environment Check"
-                    echo "======================================"
+                    echo "===== Environment Check ====="
 
                     echo "Node version:"
                     node --version
@@ -56,15 +54,13 @@ pipeline {
             steps {
                 sh '''
                     echo "======================================"
-                    echo " Running Check Login E2E Tests"
+                    echo " Running Check login E2E Tests"
                     echo "======================================"
 
                     bru run "Check login" \
                         --env Dev \
-                        --reporter=junit \
-                        --output reports/check-login-junit.xml \
-                        --reporter=html \
-                        --output reports/check-login-report.html
+                        --reporter-junit reports/check-login-junit.xml \
+                        --reporter-html reports/check-login-report.html
                 '''
             }
         }
@@ -73,9 +69,7 @@ pipeline {
     post {
 
         always {
-            echo "======================================"
-            echo " Publishing Test Results"
-            echo "======================================"
+            echo "===== Publishing Test Results ====="
 
             junit(
                 allowEmptyResults: true,
@@ -103,7 +97,7 @@ pipeline {
 
             withCredentials([
                 string(
-                    credentialsId: '1b704ab0-1c91-45ac-9727-60be462ba1b4',
+                    credentialsId: 'najva-sms-token',
                     variable: 'NAJVA_TOKEN'
                 )
             ]) {
@@ -111,90 +105,41 @@ pipeline {
                 sh '''
                     set +x
 
-                    cat > send-sms.js << 'EOF'
+                    MESSAGE="ALERT: MyDot E2E Check Login FAILED. Jenkins Build #${BUILD_NUMBER}. Please check Jenkins."
 
-                    const mobiles = [
-                        process.env.MOBILE_1,
-                        process.env.MOBILE_2
-                    ];
+                    echo "Sending SMS to ${MOBILE_1}..."
 
-                    const token = process.env.NAJVA_TOKEN;
+                    curl -sS \
+                        -X POST \
+                        "https://email.najva.com/v1/sms/transactional_sms/" \
+                        -H "Accept: application/json" \
+                        -H "najva-token: ${NAJVA_TOKEN}" \
+                        -H "Content-Type: application/json" \
+                        --data "{
+                            \\"sms_content\\": \\"${MESSAGE}\\",
+                            \\"sender\\": \\"${NAJVA_SENDER}\\",
+                            \\"mobile\\": \\"${MOBILE_1}\\"
+                        }"
 
-                    async function sendSMS(mobile) {
+                    echo ""
+                    echo "SMS request sent to ${MOBILE_1}"
 
-                        const response = await fetch(
-                            'https://email.najva.com/v1/sms/transactional_sms/',
-                            {
-                                method: 'POST',
+                    echo "Sending SMS to ${MOBILE_2}..."
 
-                                headers: {
-                                    'Accept': 'application/json',
-                                    'najva-token': token,
-                                    'Content-Type': 'application/json'
-                                },
+                    curl -sS \
+                        -X POST \
+                        "https://email.najva.com/v1/sms/transactional_sms/" \
+                        -H "Accept: application/json" \
+                        -H "najva-token: ${NAJVA_TOKEN}" \
+                        -H "Content-Type: application/json" \
+                        --data "{
+                            \\"sms_content\\": \\"${MESSAGE}\\",
+                            \\"sender\\": \\"${NAJVA_SENDER}\\",
+                            \\"mobile\\": \\"${MOBILE_2}\\"
+                        }"
 
-                                body: JSON.stringify({
-                                    sms_content:
-                                        'ALERT: MyDot E2E Check Login FAILED. Jenkins Build #' +
-                                        process.env.BUILD_NUMBER,
-
-                                    sender: process.env.NAJVA_SENDER,
-                                    mobile: mobile
-                                })
-                            }
-                        );
-
-                        const result = await response.text();
-
-                        console.log(
-                            'SMS response for ' + mobile + ':'
-                        );
-
-                        console.log(result);
-
-                        if (!response.ok) {
-                            throw new Error(
-                                'SMS request failed for ' +
-                                mobile +
-                                ' - HTTP ' +
-                                response.status
-                            );
-                        }
-                    }
-
-                    async function main() {
-
-                        for (const mobile of mobiles) {
-
-                            console.log(
-                                'Sending SMS to ' + mobile + '...'
-                            );
-
-                            await sendSMS(mobile);
-
-                            console.log(
-                                'SMS sent successfully to ' + mobile
-                            );
-                        }
-                    }
-
-                    main().catch(error => {
-
-                        console.error(
-                            'SMS ERROR:',
-                            error
-                        );
-
-                        process.exit(1);
-                    });
-
-                    EOF
-
-                    echo "Running SMS notification..."
-
-                    node send-sms.js
-
-                    rm -f send-sms.js
+                    echo ""
+                    echo "SMS request sent to ${MOBILE_2}"
 
                     echo "======================================"
                     echo " SMS notification process completed"
