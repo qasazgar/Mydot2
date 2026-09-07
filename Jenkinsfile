@@ -104,8 +104,11 @@ pipeline {
             echo "======================================"
 
             sh '''
-                bru run "sms/SendSmsFail.bru" \
-                    --env Dev
+                    echo "======================================"
+                    echo " Running Check Login E2E Tests"
+                    echo "======================================"
+
+                    bru run "sms" \
             '''
 
             echo "======================================"
