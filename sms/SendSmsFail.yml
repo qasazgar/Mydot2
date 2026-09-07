@@ -1,0 +1,30 @@
+info:
+  name: Send SMS FAIL
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: https://sms.najva.com/v2/sms/send
+  headers:
+    - name: Authorization
+      value: Bearer f9627e4f03a0b070858927b72c3d29c0bbaa62b83cd16778ae
+  body:
+    type: json
+    data: |-
+      {
+        "message": "Production Alert: Some E2E scenarios Mydot have encountered issues. Please investigate.",
+        "sender": "1000090990",
+        "receivers": [
+          "09120233186",
+          "09127988405",
+        ]
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false

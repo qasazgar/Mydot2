@@ -1,19 +1,15 @@
 pipeline {
     agent any
 
-    environment {
-        NAJVA_SENDER = 'YOUR_SENDER'
-        MOBILE_1     = '09127988405'
-        MOBILE_2     = '09127988406'
-    }
-
     options {
         disableConcurrentBuilds()
 
-        buildDiscarder(logRotator(
-            numToKeepStr: '20',
-            artifactNumToKeepStr: '10'
-        ))
+        buildDiscarder(
+            logRotator(
+                numToKeepStr: '20',
+                artifactNumToKeepStr: '10'
+            )
+        )
     }
 
     stages {
@@ -27,7 +23,9 @@ pipeline {
         stage('Check Environment') {
             steps {
                 sh '''
-                    echo "===== Environment Check ====="
+                    echo "======================================"
+                    echo " Environment Check"
+                    echo "======================================"
 
                     echo "Node version:"
                     node --version
@@ -37,6 +35,8 @@ pipeline {
 
                     echo "Bruno version:"
                     bru --version
+
+                    echo "======================================"
                 '''
             }
         }
@@ -44,8 +44,12 @@ pipeline {
         stage('Prepare Reports') {
             steps {
                 sh '''
+                    echo "Preparing reports directory..."
+
                     rm -rf reports
                     mkdir -p reports
+
+                    echo "Reports directory is ready."
                 '''
             }
         }
@@ -54,13 +58,17 @@ pipeline {
             steps {
                 sh '''
                     echo "======================================"
-                    echo " Running Check login E2E Tests"
+                    echo " Running Check Login E2E Tests"
                     echo "======================================"
 
                     bru run "Check login" \
                         --env Dev \
                         --reporter-junit reports/check-login-junit.xml \
                         --reporter-html reports/check-login-report.html
+
+                    echo "======================================"
+                    echo " Check Login Tests Completed"
+                    echo "======================================"
                 '''
             }
         }
@@ -69,7 +77,9 @@ pipeline {
     post {
 
         always {
-            echo "===== Publishing Test Results ====="
+            echo "======================================"
+            echo " Publishing Test Results"
+            echo "======================================"
 
             junit(
                 allowEmptyResults: true,
@@ -80,72 +90,41 @@ pipeline {
                 artifacts: 'reports/*.html',
                 allowEmptyArchive: true
             )
+
+            echo "======================================"
         }
 
         success {
             echo "======================================"
             echo " CHECK LOGIN TESTS PASSED"
-            echo " No SMS will be sent."
+            echo " No SMS notification will be sent."
             echo "======================================"
         }
 
         failure {
             echo "======================================"
             echo " CHECK LOGIN TESTS FAILED"
-            echo " Sending SMS notification..."
+            echo " Running SMS notification script..."
             echo "======================================"
 
-            withCredentials([
-                string(
-                    credentialsId: 'najva-sms-token',
-                    variable: 'NAJVA_TOKEN'
-                )
-            ]) {
+            sh '''
+                if [ -f "sms/SendSmsFail" ]; then
 
-                sh '''
-                    set +x
+                    chmod +x sms/SendSmsFail
 
-                    MESSAGE="ALERT: MyDot E2E Check Login FAILED. Jenkins Build #${BUILD_NUMBER}. Please check Jenkins."
+                    ./sms/SendSmsFail
 
-                    echo "Sending SMS to ${MOBILE_1}..."
+                else
 
-                    curl -sS \
-                        -X POST \
-                        "https://email.najva.com/v1/sms/transactional_sms/" \
-                        -H "Accept: application/json" \
-                        -H "najva-token: ${NAJVA_TOKEN}" \
-                        -H "Content-Type: application/json" \
-                        --data "{
-                            \\"sms_content\\": \\"${MESSAGE}\\",
-                            \\"sender\\": \\"${NAJVA_SENDER}\\",
-                            \\"mobile\\": \\"${MOBILE_1}\\"
-                        }"
+                    echo "ERROR: sms/SendSmsFail not found!"
+                    exit 1
 
-                    echo ""
-                    echo "SMS request sent to ${MOBILE_1}"
+                fi
+            '''
 
-                    echo "Sending SMS to ${MOBILE_2}..."
-
-                    curl -sS \
-                        -X POST \
-                        "https://email.najva.com/v1/sms/transactional_sms/" \
-                        -H "Accept: application/json" \
-                        -H "najva-token: ${NAJVA_TOKEN}" \
-                        -H "Content-Type: application/json" \
-                        --data "{
-                            \\"sms_content\\": \\"${MESSAGE}\\",
-                            \\"sender\\": \\"${NAJVA_SENDER}\\",
-                            \\"mobile\\": \\"${MOBILE_2}\\"
-                        }"
-
-                    echo ""
-                    echo "SMS request sent to ${MOBILE_2}"
-
-                    echo "======================================"
-                    echo " SMS notification process completed"
-                    echo "======================================"
-                '''
-            }
+            echo "======================================"
+            echo " SMS notification process completed"
+            echo "======================================"
         }
     }
 }
