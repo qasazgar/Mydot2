@@ -44,12 +44,8 @@ pipeline {
         stage('Prepare Reports') {
             steps {
                 sh '''
-                    echo "Preparing reports directory..."
-
                     rm -rf reports
                     mkdir -p reports
-
-                    echo "Reports directory is ready."
                 '''
             }
         }
@@ -97,33 +93,23 @@ pipeline {
         success {
             echo "======================================"
             echo " CHECK LOGIN TESTS PASSED"
-            echo " No SMS notification will be sent."
+            echo " No SMS will be sent."
             echo "======================================"
         }
 
         failure {
             echo "======================================"
             echo " CHECK LOGIN TESTS FAILED"
-            echo " Running SMS notification script..."
+            echo " Running SendSmsFail..."
             echo "======================================"
 
             sh '''
-                if [ -f "sms/SendSmsFail" ]; then
-
-                    chmod +x sms/SendSmsFail
-
-                    ./sms/SendSmsFail
-
-                else
-
-                    echo "ERROR: sms/SendSmsFail not found!"
-                    exit 1
-
-                fi
+                bru run "sms/SendSmsFail.bru" \
+                    --env Dev
             '''
 
             echo "======================================"
-            echo " SMS notification process completed"
+            echo " SendSmsFail completed"
             echo "======================================"
         }
     }
