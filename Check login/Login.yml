@@ -72,8 +72,8 @@ runtime:
             expect(res.status).to.equal(200);
           });
 
-          test("Response time should be less than 2000 ms", function() {
-            expect(res.responseTime).to.be.lessThan(2000);
+          test("Response time should be less than 500 ms", function() {
+            expect(res.responseTime).to.be.lessThan(500);
           });
         }
 

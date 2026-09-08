@@ -1,11 +1,11 @@
 info:
-  name: Create Comment
+  name: Delete Quote Post
   type: http
-  seq: 3
+  seq: 10
 
 http:
-  method: POST
-  url: "{{Url}}/dots/"
+  method: delete
+  url: https://api.mydot.one/mydot/api/v1/dots/{{dot_id_Quote}}/
   headers:
     - name: accept
       value: application/json, text/plain, */*
@@ -13,10 +13,8 @@ http:
       value: en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6
     - name: cache-control
       value: no-cache
-    - name: content-type
-      value: application/json
     - name: Cookie
-      value: csrftoken=1myTX0tPxIMZ41BbVHFKcL5NjpfhsjGM; sessionid=v0afup4cq8ctofux08e37nwklnel09fn; _clck=1dpuog2%5E2%5Eg94%5E0%5E2436; __Secure-access_token=eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg4NzA2MjkxLCJpYXQiOjE3ODg2OTk0OTcsImp0aSI6ImY4ZTRhMzUzMWVkNTRhMGU5ZWIwZmJkNjU2YjVkOGI2IiwidXNlcl9pZCI6IjhlZjQ4MzVmLTgxZjEtNDBhOC04MmI1LTFmMjNiZDIwNDA5MCJ9.osc0g0XFPz0T0qymKyPk51grnX6t5GBgKXxqJBKTL137z_rOgd1FVSRVGW0luYGgKhCKUFiEZ2CbI1M2hIRBrQ; is_logged_in=true
+      value: csrftoken=1myTX0tPxIMZ41BbVHFKcL5NjpfhsjGM; sessionid=v0afup4cq8ctofux08e37nwklnel09fn; _clck=1dpuog2%5E2%5Eg94%5E0%5E2436; __Secure-access_token=eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzg4Nzk0MTE5LCJpYXQiOjE3ODg3NzkxMjEsImp0aSI6IjQ3ZmM5NjFhOTVjZTQyNWU4NzNlZjkwZDIyODBhOTVjIiwidXNlcl9pZCI6IjhlZjQ4MzVmLTgxZjEtNDBhOC04MmI1LTFmMjNiZDIwNDA5MCJ9._6VqlmuRXXL-7DzxyJdAC2AWAh7A5om8Pr5fwnMqNXh_Cpw3kINPA8UWL68XtOluZMnkXwXF6kGryunUVQK9Lw; is_logged_in=true
     - name: origin
       value: https://mydot.one
     - name: pragma
@@ -39,27 +37,20 @@ http:
       value: same-site
     - name: user-agent
       value: Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1
-  body:
-    type: json
-    data: |-
-      {
-        "dot_type": "reply",
-        "content": "test4",
-        "reply_to": "{{dot_id}}",
-        "repost_of": null,
-        "quote_of": null,
-        "media_ids": [],
-        "reply_permission": "everyone"
-      }
   auth: inherit
 
 runtime:
   scripts:
+    - type: after-response
+      code: |-
+        console.log("Waiting 1 seconds before request...");
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
     - type: tests
       code: |-
         tests :{
-          test("Status code should be 201", function() {
-            expect(res.status).to.equal(201);
+          test("Status code should be 200", function() {
+            expect(res.status).to.equal(200);
           });
 
           test("Response time should be less than 500 ms", function() {

@@ -9,3 +9,6 @@ variables:
   - name: dot_id
     value: ""
     description: ""
+  - name: dot_id_Quote
+    value: ""
+    description: ""

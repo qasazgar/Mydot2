@@ -1,0 +1,43 @@
+info:
+  name: "like Post "
+  type: http
+  seq: 5
+
+http:
+  method: post
+  url: "{{Url}}/dots/{{dot_id}}/like/"
+  headers:
+    - name: sec-ch-ua-platform
+      value: '"iOS"'
+    - name: Referer
+      value: https://mydot.one/
+    - name: User-Agent
+      value: Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1
+    - name: Accept
+      value: application/json, text/plain, */*
+    - name: sec-ch-ua
+      value: '"Chromium";v="152", "Not?A_Brand";v="24", "Google Chrome";v="152"'
+    - name: sec-ch-ua-mobile
+      value: ?1
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: tests
+      code: |-
+        tests :{
+          test("Status code should be 20", function() {
+            expect(res.status).to.equal(201);
+          });
+
+          test("Response time should be less than 500 ms", function() {
+            expect(res.responseTime).to.be.lessThan(500);
+          });
+        }
+
+settings:
+  encodeUrl: false
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
