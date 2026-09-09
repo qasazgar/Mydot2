@@ -5,7 +5,7 @@ info:
 
 http:
   method: delete
-  url: https://api.mydot.one/mydot/api/v1/dots/{{dot_id}}/repost/
+  url: "{{Url}}/dots/{{dot_id}}/repost/"
   headers:
     - name: accept
       value: application/json, text/plain, */*

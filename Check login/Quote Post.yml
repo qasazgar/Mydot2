@@ -5,7 +5,7 @@ info:
 
 http:
   method: post
-  url: https://api.mydot.one/mydot/api/v1/dots/
+  url: "{{Url}}/dots/"
   headers:
     - name: sec-ch-ua-platform
       value: '"iOS"'
