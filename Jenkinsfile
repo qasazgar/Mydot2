@@ -6,7 +6,7 @@ pipeline {
 
         buildDiscarder(
             logRotator(
-                numToKeepStr: '20',
+                numToKeepStr: '50',
                 artifactNumToKeepStr: '10'
             )
         )
