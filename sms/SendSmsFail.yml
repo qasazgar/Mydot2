@@ -16,7 +16,7 @@ http:
         "message": "Production Alert: Some E2E scenarios Mydot have encountered issues. Please investigate.",
         "sender": "1000090990",
         "receivers": [
-          "09120034314",
+       //   "09120034314",
           "09127988405"
         ]
       }
