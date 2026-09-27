@@ -50,22 +50,51 @@ pipeline {
             }
         }
 
-        stage('Run Check Login Tests') {
+        stage('Run CheckWallet Tests') {
             steps {
-                sh '''
-                    echo "======================================"
-                    echo " Running Check Login E2E Tests"
-                    echo "======================================"
+                catchError(
+                    buildResult: 'FAILURE',
+                    stageResult: 'FAILURE'
+                ) {
+                    sh '''
+                        echo "======================================"
+                        echo " Running CheckWallet E2E Tests"
+                        echo "======================================"
 
-                    bru run "Check login" \
-                        --env Dev \
-                        --reporter-junit reports/check-login-junit.xml \
-                        --reporter-html reports/check-login-report.html
+                        bru run "CheckWallet" \
+                            --env Dev \
+                            --reporter-junit reports/check-wallet-junit.xml \
+                            --reporter-html reports/check-wallet-report.html
 
-                    echo "======================================"
-                    echo " Check Login Tests Completed"
-                    echo "======================================"
-                '''
+                        echo "======================================"
+                        echo " CheckWallet Tests Completed"
+                        echo "======================================"
+                    '''
+                }
+            }
+        }
+
+        stage('Run CheckLogin Tests') {
+            steps {
+                catchError(
+                    buildResult: 'FAILURE',
+                    stageResult: 'FAILURE'
+                ) {
+                    sh '''
+                        echo "======================================"
+                        echo " Running CheckLogin E2E Tests"
+                        echo "======================================"
+
+                        bru run "CheckLogin" \
+                            --env Dev \
+                            --reporter-junit reports/check-login-junit.xml \
+                            --reporter-html reports/check-login-report.html
+
+                        echo "======================================"
+                        echo " CheckLogin Tests Completed"
+                        echo "======================================"
+                    '''
+                }
             }
         }
     }
@@ -92,28 +121,29 @@ pipeline {
 
         success {
             echo "======================================"
-            echo " CHECK LOGIN TESTS PASSED"
+            echo " CHECKWALLET + CHECKLOGIN TESTS PASSED"
             echo " No SMS will be sent."
             echo "======================================"
         }
 
         failure {
             echo "======================================"
-            echo " CHECK LOGIN TESTS FAILED"
+            echo " CHECKWALLET OR CHECKLOGIN TESTS FAILED"
             echo " Running SendSmsFail..."
             echo "======================================"
 
             sh '''
-                    echo "======================================"
-                    echo " Running Check Login E2E Tests"
-                    echo "======================================"
+                echo "======================================"
+                echo " Running SMS Failure Notification"
+                echo "======================================"
 
-                    bru run "sms" \
+                bru run "sms" \
+                    --env Dev
+
+                echo "======================================"
+                echo " SendSmsFail completed"
+                echo "======================================"
             '''
-
-            echo "======================================"
-            echo " SendSmsFail completed"
-            echo "======================================"
         }
     }
 }
