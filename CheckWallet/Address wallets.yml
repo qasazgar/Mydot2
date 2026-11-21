@@ -1,7 +1,7 @@
 info:
   name: Address wallets
   type: http
-  seq: 4
+  seq: 3
 
 http:
   method: get
@@ -58,4 +58,3 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
-  forwardAuthorizationHeader: false
